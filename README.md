@@ -10,7 +10,6 @@ To build the project simply `cd` into the project top-level folder and enter ```
 To understand all the targets please have a look at the Makefile.
 
 ```[tasklist]
-
 ### Roadmap
 
 - [  ] Implement parentheses evaluation.
