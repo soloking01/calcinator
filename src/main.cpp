@@ -20,6 +20,9 @@ int main() {
     auto srcStr = std::string(src);
     Lexer lexer(srcStr);
     lexer.lex();
+#ifdef TOKEN_DEBUG
+    lexer.dumpAllTokens();
+#endif
     if (!lexer.hadError) {
       std::cerr << "lexed successfully \n";
     }
