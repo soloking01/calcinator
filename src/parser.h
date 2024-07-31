@@ -22,8 +22,11 @@ private:
   struct Token peek();
   struct Token previous();
   int getPrecedence();
+  bool consume(enum TokenKind tk, std::string errMsg);
   bool check(enum TokenKind expected);
   std::unique_ptr<Expr> parseUnary();
+  std::unique_ptr<Expr> parsePrimaryExpr();
+  std::unique_ptr<Expr> parseParen();
   std::unique_ptr<Expr> parseBinary(int prec, std::unique_ptr<Expr> lhs);
   std::unique_ptr<Expr> expression();
 

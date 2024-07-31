@@ -28,7 +28,7 @@ void Lexer::lex() {
   while (!atEnd()) {
     lexOneToken();
   }
-  addToken(Token(TOKEN_EOF, "eof", 0, 0, std::nullopt));
+  addToken(Token(TOKEN_EOF, "eof", startPos_, curPos_, std::nullopt));
 }
 
 void Lexer::lexOneToken() {
@@ -83,6 +83,28 @@ void Lexer::lexOneToken() {
     }
     addToken(Token(TOKEN_SLASH, "/", startPos_, startPos_, std::nullopt));
     currTokenKind_ = TOKEN_SLASH;
+    break;
+  case '(':
+    currTokenError_ = false;
+    if (prevTokenError_ && !currTokenError_) {
+      curPos_--;
+      addToken(logError("unknown token encountered in stream"));
+      prevTokenError_ = currTokenError_ = false;
+      startPos_ = curPos_;
+    }
+    addToken(Token(TOKEN_LPAREN, "(", startPos_, startPos_, std::nullopt));
+    currTokenKind_ = TOKEN_LPAREN;
+    break;
+  case ')':
+    currTokenError_ = false;
+    if (prevTokenError_ && !currTokenError_) {
+      curPos_--;
+      addToken(logError("unknown token encountered in stream"));
+      prevTokenError_ = currTokenError_ = false;
+      startPos_ = curPos_;
+    }
+    addToken(Token(TOKEN_RPAREN, ")", startPos_, startPos_, std::nullopt));
+    currTokenKind_ = TOKEN_RPAREN;
     break;
   case ' ':
   case '\t':

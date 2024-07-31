@@ -14,6 +14,22 @@ Parser::Parser(std::vector<struct Token> tokenList, std::string src) {
   precedenceMap_[TOKEN_SLASH] = 20;
 }
 
+static bool isOperator(enum TokenKind tt) {
+  return tt == TOKEN_PLUS || tt == TOKEN_MINUS || tt == TOKEN_STAR ||
+         tt == TOKEN_SLASH;
+}
+
+bool Parser::check(enum TokenKind tk) { return peek().tk_ == tk; }
+
+bool Parser::consume(enum TokenKind tk, std::string errMsg) {
+  if (check(tk)) {
+    advance();
+    return true;
+  }
+  logError(errMsg);
+  return false;
+}
+
 struct Token Parser::advance() {
   curPtr_++;
   return previous();
@@ -28,6 +44,8 @@ struct Token Parser::previous() {
 }
 
 int Parser::getPrecedence() {
+  if (!isOperator(peek().tk_))
+    return -1;
   int prec = precedenceMap_[peek().tk_];
   if (prec <= 0)
     return -1;
@@ -41,19 +59,44 @@ std::unique_ptr<Expr> Parser::expression() {
   return parseBinary(0, std::move(lhs));
 }
 
+std::unique_ptr<Expr> Parser::parsePrimaryExpr() {
+  switch (peek().tk_) {
+  default:
+    logError("This token is unexpected. Did you place it by mistake?");
+    return nullptr;
+  case TOKEN_LPAREN:
+    return parseParen();
+  case TOKEN_NUM: {
+    advance();
+    return std::make_unique<LiteralExpr>(previous());
+  }
+  }
+}
+
 std::unique_ptr<Expr> Parser::parseTopLevel() { return expression(); }
+
+std::unique_ptr<Expr> Parser::parseParen() {
+  advance();
+  auto result = expression();
+
+  if (!consume(TOKEN_RPAREN, "expect ')' to close a grouped expression"))
+    return nullptr;
+
+  if (!result) {
+    logError("illegal expression inside parentheses");
+    return nullptr;
+  }
+  return result;
+}
 
 std::unique_ptr<Expr> Parser::parseUnary() {
 
   enum TokenKind tt = peek().tk_;
-  auto op = peek();
-  if (tt != TOKEN_MINUS && tt != TOKEN_PLUS) {
-    advance();
-    if (previous().tk_ == TOKEN_NUM)
-      return std::make_unique<LiteralExpr>(previous());
-    return nullptr;
+  if (!isOperator(tt) || tt == TOKEN_LPAREN) {
+    return parsePrimaryExpr();
   }
   advance();
+  auto op = previous();
   if (auto rhs = parseUnary()) {
     return std::make_unique<UnaryExpr>(op, std::move(rhs));
   }
@@ -70,11 +113,12 @@ std::unique_ptr<Expr> Parser::parseBinary(int minPrec,
       return lhs;
 
     auto op = peek();
+    if (!isOperator(op.tk_))
+      return nullptr;
     advance();
 
     auto rhs = parseUnary();
     if (!rhs) {
-      logError("expected expression");
       return nullptr;
     }
     int nextTokPrec = getPrecedence();
@@ -90,22 +134,21 @@ std::unique_ptr<Expr> Parser::parseBinary(int minPrec,
 }
 
 void Parser::logError(std::string errorMsg) {
-  std::string err = "\033[31;1merror: \033[0m";
+  std::string err = "\n\033[31;1merror: \033[0m";
   err.append(errorMsg);
   fprintf(stderr, "%s\n", err.c_str());
   fprintf(stderr, "| %s", src_.c_str());
   fflush(stderr);
   size_t x = 0;
-  std::cerr << "  ";
-  while (x++ < previous().tokenStartPos_) {
+  std::cerr << "| ";
+  while (x++ < peek().tokenStartPos_) {
     std::cerr << " ";
   }
   std::cerr << "^";
   x++;
-  while (x++ < previous().tokenEndPos_) {
+  while (x++ <= peek().tokenEndPos_) {
     std::cerr << "~";
   }
-  std::cerr << "\n";
 }
 } // namespace parser
 } // namespace calc

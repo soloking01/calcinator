@@ -20,6 +20,9 @@ enum TokenKind {
 
   // number
   TOKEN_NUM,
+
+  TOKEN_LPAREN,
+  TOKEN_RPAREN,
   TOKEN_ERROR,
   TOKEN_EOF,
 };
@@ -57,6 +60,13 @@ public:
       : hadError(false), src_(src), startPos_(0), curPos_(0),
         prevTokenError_(false), currTokenError_(false) {}
   void lex();
+
+  void dumpAllTokens() {
+    for (auto token : tokenList_) {
+      token.dump();
+      std::cerr << "\n";
+    }
+  }
 
   std::vector<struct Diagnostic> GetDiagnosticList() { return diagnostics_; }
   std::vector<struct Token> GetTokenList() { return tokenList_; }
